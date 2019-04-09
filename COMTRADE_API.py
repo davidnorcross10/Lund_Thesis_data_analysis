@@ -2,17 +2,21 @@ import json
 from requests_html import HTMLSession
 import time
 
-classificationHS_path = "/home/david/Documents/Thesis_Data/classificationHS.json"
+classificationHS_path = "/home/david/Documents/Lund_Thesis/Thesis_Data/classificationHS.json"
 classificationHS = json.load(open(classificationHS_path))
-masterJSON_path = "/home/david/Documents/Thesis_Data/COMTRADE/TurkeyExportsMaster.json"
+masterJSON_path = "/home/david/Documents/Lund_Thesis/Thesis_Data/COMTRADE/Turkey/TurkeyExportsMaster.json"
 
 codeList = [i["id"] for i in classificationHS["results"] if len(i["id"]) == 4]
 
 yearDict = {1:"1999,2000,2001,2002,2003",2:"2004,2005,2006,2007,2008",3:"2009,2010,2011,2012,2013",4:"2014,2015,2016,2017"}
 
-def pullData():
+def pullData(r,rg):
+    #rg = trade flow. 1 = import, 2 = export
+    #r = reporter. 792 = Turkey, 376 = Israel, 300 = Greece
+    rDict = {'Turkey':'792','Israel':'376','Greece':'300'}
+    rgDict = {'Imports':'1','Exports':'2'}
     for i in yearDict:
-        if i > 3:
+        if i > -1:
             y = yearDict[i]
             token = True
             index = 0
@@ -29,12 +33,12 @@ def pullData():
                 time.sleep(1)
                 #first {} should be replaced with comma separated list of years
                 #second {} should be replaced with comma separated list of product codes
-                url = 'http://comtrade.un.org/api/get?max=50000&type=C&freq=A&px=HS&ps={}&r=792&p=all&rg=2&cc={}&head=M'.format(y,codeString)
+                url = 'http://comtrade.un.org/api/get?max=50000&type=C&freq=A&px=HS&ps={}&r={}&p=all&rg={}&cc={}&head=M'.format(y,rDict[r],rgDict[rg],codeString)
 
                 session = HTMLSession()
                 page = session.get(url)
                 responseJSON = json.loads(page.html.html)
-                dumpPath = '/home/david/Documents/Thesis_Data/COMTRADE/TurkeyExports{}.json'.format(yearDict[i][:4]+'-'+codeString[:4])
+                dumpPath = '/home/david/Documents/Lund_Thesis/Thesis_Data/COMTRADE/{}.json'.format(r+'/'+r+rg+yearDict[i][:4]+'-'+codeString[:4])
                 json.dump(responseJSON,open(dumpPath,'w'))
 
 def readData():
@@ -51,7 +55,7 @@ def readData():
                     break
             codeString = ",".join(codes)
             index += 20
-            readPath = '/home/david/Documents/Thesis_Data/COMTRADE/TurkeyExports{}.json'.format(yearDict[i][:4]+'-'+codeString[:4])
+            readPath = '/home/david/Documents/Lund_Thesis/Thesis_Data/COMTRADE/Turkey/TurkeyExports{}.json'.format(yearDict[i][:4]+'-'+codeString[:4])
             r = json.load(open(readPath))
             resultList.append(r)
     return resultList
@@ -70,7 +74,7 @@ def cleanData():
                     break
             codeString = ",".join(codes)
             index += 20
-            readPath = '/home/david/Documents/Thesis_Data/COMTRADE/TurkeyExports{}.json'.format(yearDict[i][:4]+'-'+codeString[:4])
+            readPath = '/home/david/Documents/Lund_Thesis/Thesis_Data/COMTRADE/Turkey/TurkeyExports{}.json'.format(yearDict[i][:4]+'-'+codeString[:4])
             r = json.load(open(readPath))
             for d in r["dataset"]:
                 x = {}
@@ -79,7 +83,7 @@ def cleanData():
                         x[subIndex] = d[subIndex]
                 resultList.append(x)
     outJSON = {"dataset":resultList}
-    json.dump(outJSON,open('/home/david/Documents/Thesis_Data/COMTRADE/TurkeyExportsMaster.json','w'))
+    json.dump(outJSON,open('/home/david/Documents/Lund_Thesis/Thesis_Data/COMTRADE/Turkey/TurkeyExportsMaster.json','w'))
 
 def totalExportValue(year):
     masterJSON = json.load(open(masterJSON_path))
@@ -88,13 +92,13 @@ def totalExportValue(year):
     totalValue = 0
     for i in data:
         totalValue += i['TradeValue']
-    print(totalValue)
+    return totalValue
 
-totalExportValue(2003)
-
+#totalExportValue(2010)
+#pullData('Turkey','Imports')
 #pullData()
 #cleanData()
-'''readPath = '/home/david/Documents/Thesis_Data/COMTRADE/TurkeyExports{}.json'.format('2009'+'-'+'1517')
+'''readPath = '/home/david/Documents/Lund_Thesis/Thesis_Data/COMTRADE/Turkey/TurkeyExports{}.json'.format('2009'+'-'+'1517')
 r = json.load(open(readPath))
 data = r["dataset"]
 data = [i for i in data if i['yr'] == 2010]
